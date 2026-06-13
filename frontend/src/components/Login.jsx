@@ -12,8 +12,9 @@ export default function Login({ onLogin, onGoSignup }) {
     e.preventDefault()
     setError('')
     setLoading(true)
+    const BASE = import.meta.env.VITE_API_BASE || ''
     try {
-      const res  = await fetch('/api/login', {
+      const res  = await fetch(`${BASE}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -35,8 +36,7 @@ export default function Login({ onLogin, onGoSignup }) {
     <div className={styles.page}>
       <div className={`${styles.card} anim-fade-up`}>
         <div className={styles.logo}>
-          
-         <img src={logo} alt="Logo" className={styles.logoImage} />
+          <img src={logo} alt="Logo" className={styles.logoImage} />
         </div>
         <h2 className={styles.title}>Welcome back</h2>
         <p className={styles.sub}>Sign in to your finance dashboard</p>

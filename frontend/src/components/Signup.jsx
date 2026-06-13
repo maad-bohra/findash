@@ -15,8 +15,9 @@ export default function Signup({ onGoLogin }) {
     if (form.password !== form.confirm) return setError('Passwords do not match')
     if (form.password.length < 6)       return setError('Password must be at least 6 characters')
     setLoading(true)
+    const BASE = import.meta.env.VITE_API_BASE || ''
     try {
-      const res  = await fetch('/api/signup', {
+      const res  = await fetch(`${BASE}/api/signup`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ username: form.username, email: form.email, password: form.password }),
@@ -39,7 +40,6 @@ export default function Signup({ onGoLogin }) {
     <div className={styles.page}>
       <div className={`${styles.card} anim-fade-up`}>
         <div className={styles.logo}>
-         
           <img src={logo} alt="Logo" className={styles.logoImage} />
         </div>
         <h2 className={styles.title}>Create account</h2>
