@@ -1,3 +1,5 @@
+const BASE = import.meta.env.VITE_API_BASE || '';
+
 /**
  * Authenticated fetch wrapper.
  * Reads the JWT from localStorage and adds it as a Bearer token.
@@ -11,5 +13,5 @@ export function authFetch(url, options = {}) {
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
     }
-    return fetch(url, { ...options, headers });
+    return fetch(`${BASE}${url}`, { ...options, headers });
 }
