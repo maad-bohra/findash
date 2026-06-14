@@ -2,18 +2,7 @@ import { useState, useEffect } from 'react'
 import Login from './components/Login.jsx'
 import Signup from './components/Signup.jsx'
 import Dashboard from './components/Dashboard.jsx'
-
-//banner temp
-import NoticeBanner from './components/NoticeBanner';
-
-function App() {
-  return (
-    <>
-      <NoticeBanner />
-      {/* rest of your app */}
-    </>
-  );
-}
+import NoticeBanner from './components/NoticeBanner'
 
 export default function App() {
   const [page,  setPage]  = useState('login')
@@ -39,11 +28,9 @@ export default function App() {
   }, [])
 
   function handleLogin(userData, token) {
-    // Fix #2: store JWT token
     localStorage.setItem('authToken',        token)
     localStorage.setItem('loggedInUser',     userData.email)
     localStorage.setItem('loggedInUsername', userData.username || userData.email.split('@')[0])
-    // Fix #10, #11: persist isAdmin correctly
     localStorage.setItem('loggedInIsAdmin',  userData.isAdmin ? 'true' : 'false')
     if (userData.avatar)   localStorage.setItem('loggedInAvatar', userData.avatar)
     if (userData.currency) localStorage.setItem('loggedInCurrency', userData.currency)
@@ -71,23 +58,35 @@ export default function App() {
       else localStorage.removeItem('loggedInAvatar')
     }
     if (updates.currency) localStorage.setItem('loggedInCurrency', updates.currency)
-    // Fix #11: persist isAdmin changes (e.g. after admin promotes/demotes user)
     if (updates.isAdmin !== undefined) localStorage.setItem('loggedInIsAdmin', updates.isAdmin ? 'true' : 'false')
   }
 
   if (page === 'dashboard' && user)
     return (
-      <Dashboard
-        user={user}
-        theme={theme}
-        onToggleTheme={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
-        onLogout={handleLogout}
-        onUpdateUser={handleUpdateUser}
-      />
+      <>
+        <NoticeBanner />
+        <Dashboard
+          user={user}
+          theme={theme}
+          onToggleTheme={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+          onLogout={handleLogout}
+          onUpdateUser={handleUpdateUser}
+        />
+      </>
     )
 
   if (page === 'signup')
-    return <Signup onGoLogin={() => setPage('login')} />
+    return (
+      <>
+        <NoticeBanner />
+        <Signup onGoLogin={() => setPage('login')} />
+      </>
+    )
 
-  return <Login onLogin={handleLogin} onGoSignup={() => setPage('signup')} />
+  return (
+    <>
+      <NoticeBanner />
+      <Login onLogin={handleLogin} onGoSignup={() => setPage('signup')} />
+    </>
+  )
 }
