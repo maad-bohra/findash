@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema({
     },
     avatar: {
         type: String,
-        default: null       // ImageKit URL stored here
+        default: null      
     },
     currency: {
         type: String,

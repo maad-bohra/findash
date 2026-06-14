@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const accountSchema = new mongoose.Schema({
-  // Fix #6: scope accounts per user
+  
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

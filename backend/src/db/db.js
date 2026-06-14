@@ -3,8 +3,7 @@ const User = require('../models/user');
 const Category = require('../models/category');
 const { hashPassword } = require('../utils/password');
 
-const MONGO_URI = (process.env.MONGO_URI || '').trim(); // Fix #12: trim leading space
-
+const MONGO_URI = (process.env.MONGO_URI || '').trim(); 
 const DEFAULT_CATEGORIES = [
     { name: 'Food',          icon: '🍜', color: '#f5a623' },
     { name: 'Transport',     icon: '🚗', color: '#4f8ef7' },
@@ -21,15 +20,15 @@ const connectDB = async () => {
         await mongoose.connect(MONGO_URI);
         console.log('Connected to MongoDB.');
 
-        // Seed default admin (Fix #4: include isAdmin: true)
+        
         const adminExists = await User.findOne({ email: 'admin@test.com' });
         if (!adminExists || !adminExists.username) {
             await User.deleteOne({ email: 'admin@test.com' });
             await User.create({
                 username: 'admin',
                 email:    'admin@test.com',
-                password: hashPassword('maadbohra'), // Fix #1: hash password
-                isAdmin:  true,                      // Fix #4: was missing
+                password: hashPassword('maadbohra'), 
+                isAdmin:  true,                      
             });
             console.log('Default admin user created.');
         }

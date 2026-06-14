@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const transactionSchema = new mongoose.Schema({
-    // Fix #6: scope transactions per user
+    
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',

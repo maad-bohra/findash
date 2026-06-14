@@ -3,6 +3,18 @@ import Login from './components/Login.jsx'
 import Signup from './components/Signup.jsx'
 import Dashboard from './components/Dashboard.jsx'
 
+//banner temp
+import NoticeBanner from './components/NoticeBanner';
+
+function App() {
+  return (
+    <>
+      <NoticeBanner />
+      {/* rest of your app */}
+    </>
+  );
+}
+
 export default function App() {
   const [page,  setPage]  = useState('login')
   const [user,  setUser]  = useState(null)

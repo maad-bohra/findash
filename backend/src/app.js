@@ -10,12 +10,12 @@ const { hashPassword, comparePassword } = require('./utils/password');
 
 const app = express();
 
-// Fix #9: restrict CORS to known frontend origin
+
 const ALLOWED_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
 app.use(cors({ origin: ALLOWED_ORIGIN }));
 app.use(express.json({ limit: '10mb' }));
 
-// ImageKit — lazy init so env is already loaded (Fix #8)
+
 let _imagekit;
 function getImageKit() {
     if (!_imagekit) {
@@ -28,8 +28,8 @@ function getImageKit() {
     return _imagekit;
 }
 
-// ── JWT middleware ─────────────────────────────────────────────────────────
-// Fix #2: real token-based auth instead of forged-header auth
+// JWT middleware 
+
 function requireAuth(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.startsWith('Bearer ')
@@ -44,25 +44,24 @@ function requireAuth(req, res, next) {
     }
 }
 
-// Fix #2: admin check now reads from verified JWT payload, not a forgeable header
+
 function requireAdmin(req, res, next) {
     requireAuth(req, res, async () => {
         if (!req.user.isAdmin) {
             return res.status(403).json({ success: false, message: 'Admin access required' });
         }
-        // Fix #14: avoid extra DB hit for every admin route — trust JWT claim
-        // (admin status is encoded at login; re-login is required after demotion)
+        
         next();
     });
 }
 
-// Basic input sanitisation helper (Fix #15: strip dangerous chars)
+
 function sanitizeString(str) {
     if (typeof str !== 'string') return str;
     return str.replace(/[<>"'`]/g, '');
 }
 
-// ── 1. SIGNUP ──────────────────────────────────────────────────────────────
+//1. SIGNUP 
 app.post('/api/signup', async (req, res) => {
     // Fix #15: sanitise inputs
     const username = sanitizeString(req.body.username);
@@ -79,7 +78,7 @@ app.post('/api/signup', async (req, res) => {
         const userCount = await User.countDocuments();
         const isAdmin = userCount === 0;
 
-        // Fix #1: hash password before storing
+        
         await User.create({ username, email, password: hashPassword(password), isAdmin });
         res.json({ success: true, message: 'User created successfully', isAdmin });
     } catch (err) {
@@ -87,7 +86,7 @@ app.post('/api/signup', async (req, res) => {
     }
 });
 
-// ── 2. LOGIN ───────────────────────────────────────────────────────────────
+// 2. LOGIN 
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password)
@@ -96,7 +95,7 @@ app.post('/api/login', async (req, res) => {
     try {
         const user = await User.findOne({ email: email.toLowerCase().trim() });
 
-        // Fix #1: use comparePassword (also handles legacy plain-text during migration)
+        
         if (!user || !comparePassword(password, user.password)) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
@@ -105,7 +104,7 @@ app.post('/api/login', async (req, res) => {
             return res.status(403).json({ success: false, message: 'Your account has been deactivated. Please contact an admin.' });
         }
 
-        // Fix #2: issue JWT
+        
         const token = sign({
             userId:  user._id.toString(),
             email:   user.email,
@@ -129,7 +128,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// ── 3. GET USER PROFILE ────────────────────────────────────────────────────
+// 3. GET USER PROFILE 
 app.get('/api/user/profile', requireAuth, async (req, res) => {
     try {
         const user = await User.findById(req.user.userId).select('-password');
@@ -140,7 +139,7 @@ app.get('/api/user/profile', requireAuth, async (req, res) => {
     }
 });
 
-// ── 4. UPDATE PROFILE ─────────────────────────────────────────────────────
+// 4. UPDATE PROFILE 
 app.put('/api/user/profile', requireAuth, async (req, res) => {
     const username = sanitizeString(req.body.username);
     const avatar   = req.body.avatar;
@@ -176,7 +175,7 @@ app.put('/api/user/profile', requireAuth, async (req, res) => {
     }
 });
 
-// ── 5. CHANGE PASSWORD (self) ──────────────────────────────────────────────
+//  5. CHANGE PASSWORD (self) 
 app.put('/api/user/password', requireAuth, async (req, res) => {
     const { oldPassword, newPassword } = req.body;
     try {
@@ -186,14 +185,14 @@ app.put('/api/user/password', requireAuth, async (req, res) => {
         const user = await User.findById(req.user.userId);
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-        // Fix #1: compare hashed password
+        
         if (!comparePassword(oldPassword, user.password))
             return res.status(401).json({ success: false, message: 'Current password is incorrect' });
 
         if (newPassword.length < 6)
             return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
 
-        // Fix #1: hash new password
+        
         user.password = hashPassword(newPassword);
         await user.save();
 
@@ -203,7 +202,7 @@ app.put('/api/user/password', requireAuth, async (req, res) => {
     }
 });
 
-// ── 6. IMAGEKIT AUTH ──────────────────────────────────────────────────────
+// 6. IMAGEKIT AUTH
 app.get('/api/imagekit/auth', requireAuth, (req, res) => {
     try {
         const authParams = getImageKit().getAuthenticationParameters();
@@ -213,9 +212,7 @@ app.get('/api/imagekit/auth', requireAuth, (req, res) => {
     }
 });
 
-// ══════════════════════════════════════════════════════════════════════════
-// ── ADMIN ROUTES ──────────────────────────────────────────────────────────
-// ══════════════════════════════════════════════════════════════════════════
+
 
 // GET all users
 app.get('/api/admin/users', requireAdmin, async (req, res) => {
@@ -319,9 +316,7 @@ app.put('/api/admin/password', requireAdmin, async (req, res) => {
     }
 });
 
-// ══════════════════════════════════════════════════════════════════════════
-// ── TRANSACTION ROUTES (Fix #6: scoped per user) ─────────────────────────
-// ══════════════════════════════════════════════════════════════════════════
+
 
 app.get('/api/transactions', requireAuth, async (req, res) => {
     try {
@@ -378,7 +373,7 @@ app.delete('/api/transactions/:id', requireAuth, async (req, res) => {
     }
 });
 
-// ── CATEGORIES (auth required) ────────────────────────────────────────────
+// CATEGORIES (auth required) 
 app.get('/api/categories', requireAuth, async (req, res) => {
     try {
         const categories = await Category.find().sort({ name: 1 });
@@ -421,7 +416,7 @@ app.delete('/api/categories/:id', requireAdmin, async (req, res) => {
     }
 });
 
-// ── ACCOUNTS (scoped per user) ────────────────────────────────────────────
+// ACCOUNTS (scoped per user) 
 app.get('/api/accounts', requireAuth, async (req, res) => {
     try {
         const accounts = await Account.find({ userId: req.user.userId }).sort({ createdAt: 1 });
