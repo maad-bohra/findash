@@ -1106,3 +1106,16 @@
     padding: 0.85rem 0.7rem;
   }
 }
+.mainCredit {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-muted, #555);
+  padding: 1rem 0 0.5rem;
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+}
+
+.mainCredit strong {
+  font-weight: 600;
+  color: var(--text-soft, #777);
+}

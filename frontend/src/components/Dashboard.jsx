@@ -1006,6 +1006,9 @@ export default function Dashboard({ user, theme, onToggleTheme, onLogout, onUpda
       {/* Main Content */}
       <main className={styles.main}>
         {renderMain()}
+        <div className={styles.mainCredit}>
+          Developed by <strong>Maad Bohra</strong> · © 2026 FinDash
+        </div>
       </main>
 
       {showModal && (
