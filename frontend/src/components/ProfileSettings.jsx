@@ -38,7 +38,7 @@ export default function ProfileSettings({ user, onUpdateUser }) {
   }
 
   // ── Upload avatar to ImageKit via backend auth ───────────────────────────
-  async function handleAvatarChange(e) {
+  /*async function handleAvatarChange(e) {
     const file = e.target.files[0]
     if (!file) return
     if (file.size > 5 * 1024 * 1024) {
@@ -87,6 +87,44 @@ export default function ProfileSettings({ user, onUpdateUser }) {
     setAvatar(null)
     if (fileRef.current) fileRef.current.value = ''
     setProfileMsg({ text: 'Photo removed. Click Save Profile to apply.', ok: true })
+  }
+*/
+
+async function handleAvatarChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) {
+      setProfileMsg({ text: 'Image must be under 5 MB', ok: false })
+      return
+    }
+
+    setUploading(true)
+    setProfileMsg({ text: '', ok: true })
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('fileName', `avatar_${user.email.replace('@', '_')}`)
+
+      const token = localStorage.getItem('authToken')
+      const res = await fetch(`${API}/imagekit/upload`, {
+        method:  'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body:    formData,
+      })
+      const data = await res.json()
+
+      if (data.url) {
+        setAvatar(data.url)
+        setProfileMsg({ text: '✓ Photo uploaded! Click Save Profile to apply.', ok: true })
+      } else {
+        setProfileMsg({ text: 'Upload failed. Try again.', ok: false })
+      }
+    } catch (err) {
+      setProfileMsg({ text: 'Upload error: ' + err.message, ok: false })
+    } finally {
+      setUploading(false)
+    }
   }
 
   // ── Save profile to DB ───────────────────────────────────────────────────

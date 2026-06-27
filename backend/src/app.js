@@ -10,7 +10,8 @@ const Account     = require('./models/account');
 const { sign, verify } = require('./utils/jwt');
 const RefreshToken = require('./models/refreshToken');
 const { hashPassword, comparePassword } = require('./utils/password');
-
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 const app = express();
 
 
@@ -266,12 +267,26 @@ app.put('/api/user/password', requireAuth, async (req, res) => {
 });
 
 // 6. IMAGEKIT AUTH
-app.get('/api/imagekit/auth', requireAuth, (req, res) => {
+/*app.get('/api/imagekit/auth', requireAuth, (req, res) => {
     try {
         const authParams = getImageKit().getAuthenticationParameters();
         res.json(authParams);
     } catch (err) {
         res.status(500).json({ success: false, message: 'ImageKit auth failed' });
+    }
+});*/
+
+app.post('/api/imagekit/upload', requireAuth, upload.single('file'), async (req, res) => {
+    try {
+        const ik = getImageKit();
+        const response = await ik.upload({
+            file:     req.file.buffer.toString('base64'),
+            fileName: req.body.fileName || `avatar_${Date.now()}`,
+            folder:   '/avatars',
+        });
+        res.json({ success: true, url: response.url });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
     }
 });
 
