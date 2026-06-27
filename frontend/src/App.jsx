@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { logoutRequest } from './utils/api.js'
 import Login from './components/Login.jsx'
 import Signup from './components/Signup.jsx'
 import Dashboard from './components/Dashboard.jsx'
@@ -38,13 +39,8 @@ export default function App() {
     setPage('dashboard')
   }
 
-  function handleLogout() {
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('loggedInUser')
-    localStorage.removeItem('loggedInUsername')
-    localStorage.removeItem('loggedInAvatar')
-    localStorage.removeItem('loggedInCurrency')
-    localStorage.removeItem('loggedInIsAdmin')
+  async function handleLogout() {
+    await logoutRequest()   // clears cookie server-side + clears localStorage
     setUser(null)
     setPage('login')
   }

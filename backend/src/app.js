@@ -1,4 +1,6 @@
 const express = require('express');
+const cookieParser = require('cookie-parser');
+const crypto = require('crypto');
 const cors    = require('cors');
 const ImageKit = require('imagekit');
 const User        = require('./models/user');
@@ -6,6 +8,7 @@ const Transaction = require('./models/transaction');
 const Category    = require('./models/category');
 const Account     = require('./models/account');
 const { sign, verify } = require('./utils/jwt');
+const RefreshToken = require('./models/refreshToken');
 const { hashPassword, comparePassword } = require('./utils/password');
 
 const app = express();
@@ -13,6 +16,7 @@ const app = express();
 
 const ALLOWED_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
 app.use(cors({ origin: ALLOWED_ORIGIN }));
+app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 
 
@@ -105,16 +109,29 @@ app.post('/api/login', async (req, res) => {
         }
 
         
-        const token = sign({
+        const accessToken = sign({
             userId:  user._id.toString(),
             email:   user.email,
             isAdmin: user.isAdmin,
         });
 
+        // Issue refresh token (30 days)
+        const REFRESH_DAYS = 30;
+        const rawRefreshToken = crypto.randomBytes(40).toString('hex');
+        const expiresAt = new Date(Date.now() + REFRESH_DAYS * 24 * 60 * 60 * 1000);
+        await RefreshToken.create({ userId: user._id, token: rawRefreshToken, expiresAt });
+
+        res.cookie('refreshToken', rawRefreshToken, {
+            httpOnly: true,
+            secure:   process.env.NODE_ENV === 'production',
+            sameSite: 'None',
+            maxAge:   REFRESH_DAYS * 24 * 60 * 60 * 1000,
+        });
+
         res.json({
             success: true,
             message: 'Login successful',
-            token,
+            token: accessToken,
             user: {
                 email:    user.email,
                 username: user.username,
@@ -128,7 +145,44 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// 3. GET USER PROFILE 
+// 3. REFRESH TOKEN
+app.post('/api/auth/refresh', async (req, res) => {
+    const raw = req.cookies?.refreshToken;
+    if (!raw) return res.status(401).json({ success: false, message: 'No refresh token' });
+
+    try {
+        const stored = await RefreshToken.findOne({ token: raw });
+        if (!stored || stored.expiresAt < new Date()) {
+            // Delete if expired
+            if (stored) await RefreshToken.deleteOne({ _id: stored._id });
+            return res.status(401).json({ success: false, message: 'Refresh token expired' });
+        }
+
+        const user = await User.findById(stored.userId);
+        if (!user || !user.isActive)
+            return res.status(401).json({ success: false, message: 'User not found or inactive' });
+
+        const newAccessToken = sign({
+            userId:  user._id.toString(),
+            email:   user.email,
+            isAdmin: user.isAdmin,
+        });
+
+        res.json({ success: true, token: newAccessToken });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// 4. LOGOUT — delete refresh token from DB and clear cookie
+app.post('/api/auth/logout', async (req, res) => {
+    const raw = req.cookies?.refreshToken;
+    if (raw) await RefreshToken.deleteOne({ token: raw }).catch(() => {});
+    res.clearCookie('refreshToken', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'None' });
+    res.json({ success: true, message: 'Logged out' });
+});
+
+// 5. GET USER PROFILE 
 app.get('/api/user/profile', requireAuth, async (req, res) => {
     try {
         const user = await User.findById(req.user.userId).select('-password');

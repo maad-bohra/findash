@@ -1,8 +1,9 @@
-
 const crypto = require('crypto');
 
 const JWT_SECRET = process.env.JWT_SECRET;
-const DEFAULT_EXPIRES_IN = 7 * 24 * 60 * 60; 
+
+// Access token: 15 minutes
+const ACCESS_TOKEN_EXPIRES_IN = 15 * 60;
 
 function base64urlEncode(buf) {
     return Buffer.from(buf)
@@ -13,14 +14,12 @@ function base64urlEncode(buf) {
 }
 
 function base64urlDecode(str) {
-    // Pad to multiple of 4
     str = str.replace(/-/g, '+').replace(/_/g, '/');
     while (str.length % 4) str += '=';
     return Buffer.from(str, 'base64');
 }
 
-
-function sign(payload, expiresIn = DEFAULT_EXPIRES_IN) {
+function sign(payload, expiresIn = ACCESS_TOKEN_EXPIRES_IN) {
     const header = base64urlEncode(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
     const now = Math.floor(Date.now() / 1000);
     const fullPayload = { ...payload, iat: now, exp: now + expiresIn };
@@ -32,7 +31,6 @@ function sign(payload, expiresIn = DEFAULT_EXPIRES_IN) {
     return `${signingInput}.${sig}`;
 }
 
-// verify jwt tokens
 function verify(token) {
     if (!token) throw new Error('No token provided');
     const parts = token.split('.');
@@ -42,7 +40,6 @@ function verify(token) {
     const expectedSig = base64urlEncode(
         crypto.createHmac('sha256', JWT_SECRET).update(signingInput).digest()
     );
-    // Constant-time comparison
     const sigBuf = Buffer.from(sig);
     const expBuf = Buffer.from(expectedSig);
     if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
@@ -55,4 +52,4 @@ function verify(token) {
     return payload;
 }
 
-module.exports = { sign, verify };
+module.exports = { sign, verify, ACCESS_TOKEN_EXPIRES_IN };
