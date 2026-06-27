@@ -6,7 +6,7 @@ const refreshTokenSchema = new mongoose.Schema({
     expiresAt: { type: Date,   required: true },
 }, { timestamps: true });
 
-// Auto-delete expired documents from MongoDB
+
 refreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model('RefreshToken', refreshTokenSchema);
