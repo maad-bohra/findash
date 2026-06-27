@@ -996,6 +996,10 @@ export default function Dashboard({ user, theme, onToggleTheme, onLogout, onUpda
             <span className={styles.navIconWrap}>⚙</span>
             Settings
           </button>
+          <div className={styles.credit}>
+            <span>Developed by <strong>Maad Bohra</strong></span>
+            <span>© 2026 FinDash</span>
+          </div>
         </div>
       </aside>
 
